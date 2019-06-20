@@ -1,6 +1,7 @@
 # text-autoencoders
 This repo contains the code and data of the following paper:  
-*"[Latent Space Secrets of Denoising Text-Autoencoders](https://arxiv.org/abs/1905.12777)". Tianxiao Shen, Jonas Mueller, Regina Barzilay, and Tommi Jaakkola.*
+[Latent Space Secrets of Denoising Text-Autoencoders](https://arxiv.org/abs/1905.12777)  
+*Tianxiao Shen, Jonas Mueller, Regina Barzilay, and Tommi Jaakkola*
 
 We support plain autoencoder (AE), variational autoencoder (VAE), adversarial autoencoder (AAE), AAE with perturbed z, and AAE with perturbed x (ours, default).
 
