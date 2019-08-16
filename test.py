@@ -7,11 +7,12 @@ from vocab import Vocab
 from model import AE, VAE, AAE
 from utils import *
 from batchify import get_batches
+from train import evaluate
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--checkpoint', metavar='DIR', required=True,
                     help='checkpoint directory')
-parser.add_argument('--output', metavar='FILE', required=True,
+parser.add_argument('--output', metavar='FILE',
                     help='output file name (in checkpoint directory)')
 parser.add_argument('--data', metavar='FILE',
                     help='path to data file')
@@ -27,6 +28,8 @@ parser.add_argument('--batch-size', type=int, default=1, metavar='N',
 parser.add_argument('--max-len', type=int, default=35, metavar='N',
                     help='max sequence length')
 
+parser.add_argument('--evaluate', action='store_true',
+                    help='evaluate on data file')
 parser.add_argument('--reconstruct', action='store_true',
                     help='reconstruct data file')
 parser.add_argument('--sample', action='store_true',
@@ -89,18 +92,24 @@ if __name__ == '__main__':
     cuda = not args.no_cuda and torch.cuda.is_available()
     device = torch.device("cuda" if cuda else "cpu")
     model = get_model(os.path.join(args.checkpoint, 'model.pt'))
-    out_file = os.path.join(args.checkpoint, args.output)
+
+    if args.evaluate:
+        sents = load_sent(args.data)
+        batches, _ = get_batches(sents, vocab, args.batch_size, device)
+        meters = evaluate(model, batches)
+        print(' '.join(['{} {:.2f},'.format(k, meter.avg)
+            for k, meter in meters.items()]))
 
     if args.sample:
         z = np.random.normal(size=(args.n, model.args.dim_z)).astype('f')
         sents = decode(z)
-        write_sent(sents, out_file)
+        write_sent(sents, os.path.join(args.checkpoint, args.output))
 
     if args.reconstruct:
         sents = load_sent(args.data)
         z = encode(sents)
         sents_rec = decode(z)
-        write_sent(sents_rec, out_file)
+        write_sent(sents_rec, os.path.join(args.checkpoint, args.output))
 
     if args.arithmetic:
         fa, fb, fc = args.data.split(',')
@@ -108,7 +117,7 @@ if __name__ == '__main__':
         za, zb, zc = encode(sa), encode(sb), encode(sc)
         zd = zc + args.k * (zb.mean(axis=0) - za.mean(axis=0))
         sd = decode(zd)
-        write_sent(sd, out_file)
+        write_sent(sd, os.path.join(args.checkpoint, args.output))
 
     if args.interpolate:
         f1, f2 = args.data.split(',')
@@ -118,4 +127,4 @@ if __name__ == '__main__':
         zi = np.concatenate(zi, axis=0)
         si = decode(zi)
         si = list(zip(*[iter(si)]*(args.n)))
-        write_doc(si, out_file)
+        write_doc(si, os.path.join(args.checkpoint, args.output))
