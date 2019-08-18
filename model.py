@@ -10,7 +10,7 @@ class TextModel(nn.Module):
     """Container module with word embedding and projection layers"""
 
     def __init__(self, vocab, args, initrange=0.1):
-        super(TextModel, self).__init__()
+        super().__init__()
         self.vocab = vocab
         self.args = args
         self.embed = nn.Embedding(vocab.size, args.dim_emb)
@@ -25,7 +25,7 @@ class AE(TextModel):
     """Auto-Encoder"""
 
     def __init__(self, vocab, args):
-        super(AE, self).__init__(vocab, args)
+        super().__init__(vocab, args)
         self.drop = nn.Dropout(args.dropout)
         self.E = nn.LSTM(args.dim_emb, args.dim_h, args.nlayers,
             dropout=args.dropout if args.nlayers > 1 else 0, bidirectional=True)
@@ -100,7 +100,7 @@ class AE(TextModel):
 
 class VAE(AE):
     def __init__(self, vocab, args):
-        super(VAE, self).__init__(vocab, args)
+        super().__init__(vocab, args)
 
     @staticmethod
     def loss_kl(mu, logvar):
@@ -119,7 +119,7 @@ class AAE(AE):
     """Adversarial Auto-Encoder"""
 
     def __init__(self, vocab, args):
-        super(AAE, self).__init__(vocab, args)
+        super().__init__(vocab, args)
         self.D = nn.Sequential(nn.Linear(args.dim_z, args.dim_d), nn.ReLU(),
             nn.Linear(args.dim_d, 1), nn.Sigmoid())
         self.optD = optim.Adam(self.D.parameters(), lr=args.lr, betas=(0.5, 0.999))
@@ -149,12 +149,8 @@ class AAE(AE):
                 'loss_d': loss_d}
 
     def step(self, losses):
+        super().step(losses)
+
         self.optD.zero_grad()
         losses['loss_d'].backward()
         self.optD.step()
-
-        self.opt.zero_grad()
-        losses['loss'].backward()
-        # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-        #nn.utils.clip_grad_norm_(self.parameters(), clip)
-        self.opt.step()
