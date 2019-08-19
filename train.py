@@ -73,7 +73,7 @@ def evaluate(model, batches):
         for inputs, targets in batches:
             losses = model.autoenc(inputs, targets)
             for k, v in losses.items():
-                meters[k].update(v.item(), len(inputs))
+                meters[k].update(v.item(), inputs.size(1))
     loss = model.loss({k: meter.avg for k, meter in meters.items()})
     meters['loss'].update(loss)
     return meters
