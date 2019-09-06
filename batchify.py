@@ -19,6 +19,9 @@ def get_batches(data, vocab, batch_size, device):
     batches = []
     i = 0
     while i < len(data):
-        batches.append(get_batch(data[i: i+batch_size], vocab, device))
-        i += batch_size
+        j = i
+        while j < min(len(data), i+batch_size) and len(data[j]) == len(data[i]):
+            j += 1
+        batches.append(get_batch(data[i: j], vocab, device))
+        i = j
     return batches, order
