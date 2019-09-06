@@ -4,7 +4,7 @@ import torch
 import numpy as np
 
 from vocab import Vocab
-from model import AE, VAE, AAE
+from model import DAE, VAE, AAE
 from utils import *
 from batchify import get_batches
 from train import evaluate
@@ -52,7 +52,7 @@ args = parser.parse_args()
 def get_model(path):
     ckpt = torch.load(path)
     train_args = ckpt['args']
-    model = {'ae': AE, 'vae': VAE, 'aae': AAE}[train_args.model](
+    model = {'dae': DAE, 'vae': VAE, 'aae': AAE}[train_args.model](
         vocab, train_args).to(device)
     model.load_state_dict(ckpt['model'])
     model.flatten()

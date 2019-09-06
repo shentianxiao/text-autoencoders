@@ -21,8 +21,8 @@ class TextModel(nn.Module):
         self.proj.weight.data.uniform_(-initrange, initrange)
 
 
-class AE(TextModel):
-    """Auto-Encoder"""
+class DAE(TextModel):
+    """Denoising Auto-Encoder"""
 
     def __init__(self, vocab, args):
         super().__init__(vocab, args)
@@ -46,6 +46,12 @@ class AE(TextModel):
         h = torch.cat([h[-2], h[-1]], 1)
         return self.h2mu(h), self.h2logvar(h)
 
+    @staticmethod
+    def reparameterize(mu, logvar):
+        std = torch.exp(0.5*logvar)
+        eps = torch.randn_like(std)
+        return eps.mul(std).add_(mu)
+
     def decode(self, z, input, hidden=None):
         input = self.drop(self.embed(input)) + self.z2emb(z)
         output, hidden = self.G(input, hidden)
@@ -67,15 +73,10 @@ class AE(TextModel):
                 input = torch.multinomial(logits.squeeze(dim=0).exp(), num_samples=1).t()
         return torch.cat(sents)
 
-    @staticmethod
-    def reparameterize(mu, logvar):
-        std = torch.exp(0.5*logvar)
-        eps = torch.randn_like(std)
-        return eps.mul(std).add_(mu)
-
-    def forward(self, input):
-        mu, logvar = self.encode(input)
-        z = AE.reparameterize(mu, logvar)
+    def forward(self, input, is_train=False):
+        _input = noisy(self.vocab, input, *self.args.noise) if is_train else input
+        mu, logvar = self.encode(_input)
+        z = DAE.reparameterize(mu, logvar)
         logits, _ = self.decode(z, input)
         return mu, logvar, z, logits
 
@@ -86,8 +87,8 @@ class AE(TextModel):
     def loss(self, losses):
         return losses['rec']
 
-    def autoenc(self, inputs, targets):
-        _, _, _, logits = self(inputs)
+    def autoenc(self, inputs, targets, is_train=False):
+        _, _, _, logits = self(inputs, is_train)
         return {'rec': self.loss_rec(logits, targets)}
 
     def step(self, losses):
@@ -98,7 +99,9 @@ class AE(TextModel):
         self.opt.step()
 
 
-class VAE(AE):
+class VAE(DAE):
+    """Variational Auto-Encoder"""
+
     def __init__(self, vocab, args):
         super().__init__(vocab, args)
 
@@ -106,16 +109,16 @@ class VAE(AE):
     def loss_kl(mu, logvar):
         return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / len(mu)
 
-    def autoenc(self, inputs, targets):
-        mu, logvar, _, logits = self(inputs)
-        return {'rec': self.loss_rec(logits, targets),
-                'kl': VAE.loss_kl(mu, logvar)}
-
     def loss(self, losses):
         return losses['rec'] + self.args.lambda_kl * losses['kl']
 
+    def autoenc(self, inputs, targets, is_train=False):
+        mu, logvar, _, logits = self(inputs, is_train)
+        return {'rec': self.loss_rec(logits, targets),
+                'kl': VAE.loss_kl(mu, logvar)}
 
-class AAE(AE):
+
+class AAE(DAE):
     """Adversarial Auto-Encoder"""
 
     def __init__(self, vocab, args):
@@ -137,11 +140,8 @@ class AAE(AE):
         return losses['rec'] + self.args.lambda_adv * losses['adv'] + \
             self.args.lambda_p * losses['|lvar|']
 
-    def autoenc(self, inputs, targets):
-        noisy_inputs = noisy(self.vocab, inputs, *self.args.noise)
-        mu, logvar = self.encode(noisy_inputs)
-        z = AE.reparameterize(mu, logvar)
-        logits, _ = self.decode(z, inputs)
+    def autoenc(self, inputs, targets, is_train=False):
+        _, logvar, z, logits = self(inputs, is_train)
         loss_d, adv = self.loss_adv(z)
         return {'rec': self.loss_rec(logits, targets),
                 'adv': adv,
