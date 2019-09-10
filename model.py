@@ -6,6 +6,20 @@ import torch.optim as optim
 
 from noise import noisy
 
+def reparameterize(mu, logvar):
+    std = torch.exp(0.5*logvar)
+    eps = torch.randn_like(std)
+    return eps.mul(std).add_(mu)
+
+def log_prob(z, mu, logvar):
+    var = torch.exp(logvar)
+    logp = - (z-mu)**2 / (2*var) - torch.log(2*np.pi*var) / 2
+    return logp.sum(dim=1)
+
+def loss_kl(mu, logvar):
+    return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / len(mu)
+
+
 class TextModel(nn.Module):
     """Container module with word embedding and projection layers"""
 
@@ -46,12 +60,6 @@ class DAE(TextModel):
         h = torch.cat([h[-2], h[-1]], 1)
         return self.h2mu(h), self.h2logvar(h)
 
-    @staticmethod
-    def reparameterize(mu, logvar):
-        std = torch.exp(0.5*logvar)
-        eps = torch.randn_like(std)
-        return eps.mul(std).add_(mu)
-
     def decode(self, z, input, hidden=None):
         input = self.drop(self.embed(input)) + self.z2emb(z)
         output, hidden = self.G(input, hidden)
@@ -76,20 +84,21 @@ class DAE(TextModel):
     def forward(self, input, is_train=False):
         _input = noisy(self.vocab, input, *self.args.noise) if is_train else input
         mu, logvar = self.encode(_input)
-        z = DAE.reparameterize(mu, logvar)
+        z = reparameterize(mu, logvar)
         logits, _ = self.decode(z, input)
         return mu, logvar, z, logits
 
     def loss_rec(self, logits, targets):
-        return F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
-            ignore_index=self.vocab.pad, reduction='sum') / targets.size(1)
+        loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),
+            ignore_index=self.vocab.pad, reduction='none').view(targets.size())
+        return loss.sum(dim=0)
 
     def loss(self, losses):
         return losses['rec']
 
     def autoenc(self, inputs, targets, is_train=False):
         _, _, _, logits = self(inputs, is_train)
-        return {'rec': self.loss_rec(logits, targets)}
+        return {'rec': self.loss_rec(logits, targets).mean()}
 
     def step(self, losses):
         self.opt.zero_grad()
@@ -98,6 +107,21 @@ class DAE(TextModel):
         #nn.utils.clip_grad_norm_(self.parameters(), clip)
         self.opt.step()
 
+    def nll_is(self, inputs, targets, m=100):
+        """compute negative log-likelihood by importance sampling:
+           p(x;theta) = E_{q(z|x;phi)}[p(z)p(x|z;theta)/q(z|x;phi)]
+        """
+        mu, logvar = self.encode(inputs)
+        tmp = []
+        for _ in range(m):
+            z = reparameterize(mu, logvar)
+            logits, _ = self.decode(z, inputs)
+            v = log_prob(z, torch.zeros_like(z), torch.zeros_like(z)) - \
+                self.loss_rec(logits, targets) - log_prob(z, mu, logvar)
+            tmp.append(v.unsqueeze(-1))
+        ll_is = torch.logsumexp(torch.cat(tmp, 1), 1) - np.log(m)
+        return -ll_is
+
 
 class VAE(DAE):
     """Variational Auto-Encoder"""
@@ -105,17 +129,13 @@ class VAE(DAE):
     def __init__(self, vocab, args):
         super().__init__(vocab, args)
 
-    @staticmethod
-    def loss_kl(mu, logvar):
-        return -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / len(mu)
-
     def loss(self, losses):
         return losses['rec'] + self.args.lambda_kl * losses['kl']
 
     def autoenc(self, inputs, targets, is_train=False):
         mu, logvar, _, logits = self(inputs, is_train)
-        return {'rec': self.loss_rec(logits, targets),
-                'kl': VAE.loss_kl(mu, logvar)}
+        return {'rec': self.loss_rec(logits, targets).mean(),
+                'kl': loss_kl(mu, logvar)}
 
 
 class AAE(DAE):
@@ -143,7 +163,7 @@ class AAE(DAE):
     def autoenc(self, inputs, targets, is_train=False):
         _, logvar, z, logits = self(inputs, is_train)
         loss_d, adv = self.loss_adv(z)
-        return {'rec': self.loss_rec(logits, targets),
+        return {'rec': self.loss_rec(logits, targets).mean(),
                 'adv': adv,
                 '|lvar|': logvar.abs().sum(dim=1).mean(),
                 'loss_d': loss_d}

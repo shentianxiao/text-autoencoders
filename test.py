@@ -4,7 +4,7 @@ import torch
 import numpy as np
 
 from vocab import Vocab
-from model import DAE, VAE, AAE
+from model import *
 from utils import *
 from batchify import get_batches
 from train import evaluate
@@ -23,7 +23,7 @@ parser.add_argument('--enc', default='mu', metavar='M',
 parser.add_argument('--dec', default='greedy', metavar='M',
                     choices=['greedy', 'sample'],
                     help='decoding algorithm')
-parser.add_argument('--batch-size', type=int, default=1, metavar='N',
+parser.add_argument('--batch-size', type=int, default=256, metavar='N',
                     help='batch size')
 parser.add_argument('--max-len', type=int, default=35, metavar='N',
                     help='max sequence length')
@@ -68,7 +68,7 @@ def encode(sents):
         if args.enc == 'mu':
             zi = mu
         else:
-            zi = AE.reparameterize(mu, logvar)
+            zi = reparameterize(mu, logvar)
         z.append(zi.detach().cpu().numpy())
     z = np.concatenate(z, axis=0)
     z_ = np.zeros_like(z)
