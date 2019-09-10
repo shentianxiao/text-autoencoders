@@ -107,7 +107,7 @@ class DAE(TextModel):
         #nn.utils.clip_grad_norm_(self.parameters(), clip)
         self.opt.step()
 
-    def nll_is(self, inputs, targets, m=100):
+    def nll_is(self, inputs, targets, m):
         """compute negative log-likelihood by importance sampling:
            p(x;theta) = E_{q(z|x;phi)}[p(z)p(x|z;theta)/q(z|x;phi)]
         """

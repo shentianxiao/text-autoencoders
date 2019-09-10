@@ -30,6 +30,8 @@ parser.add_argument('--max-len', type=int, default=35, metavar='N',
 
 parser.add_argument('--evaluate', action='store_true',
                     help='evaluate on data file')
+parser.add_argument('--ppl', action='store_true',
+                    help='compute ppl by importance sampling')
 parser.add_argument('--reconstruct', action='store_true',
                     help='reconstruct data file')
 parser.add_argument('--sample', action='store_true',
@@ -38,6 +40,8 @@ parser.add_argument('--arithmetic', action='store_true',
                     help='compute vector offset avg(b)-avg(a) and apply to c')
 parser.add_argument('--interpolate', action='store_true',
                     help='interpolate between pairs of sentences')
+parser.add_argument('--m', type=int, default=50, metavar='N',
+                    help='num of samples for importance sampling estimate')
 parser.add_argument('--n', type=int, default=5, metavar='N',
                     help='num of sentences to generate for sample/interpolate')
 parser.add_argument('--k', type=float, default=1, metavar='R',
@@ -86,6 +90,15 @@ def decode(z):
         i += args.batch_size
     return strip_eos(sents)
 
+def calc_ppl(sents, m):
+    batches, _ = get_batches(sents, vocab, args.batch_size, device)
+    total_nll = 0
+    with torch.no_grad():
+        for inputs, targets in batches:
+            total_nll += model.nll_is(inputs, targets, m).sum().item()
+    n_words = sum(len(s) + 1 for s in sents)    # include <eos>
+    return total_nll / len(sents), np.exp(total_nll / n_words)
+
 if __name__ == '__main__':
     vocab = Vocab(os.path.join(args.checkpoint, 'vocab.txt'))
     set_seed(args.seed)
@@ -99,6 +112,11 @@ if __name__ == '__main__':
         meters = evaluate(model, batches)
         print(' '.join(['{} {:.2f},'.format(k, meter.avg)
             for k, meter in meters.items()]))
+
+    if args.ppl:
+        sents = load_sent(args.data)
+        nll, ppl = calc_ppl(sents, args.m)
+        print('NLL {:.2f}, PPL {:.2f}'.format(nll, ppl))
 
     if args.sample:
         z = np.random.normal(size=(args.n, model.args.dim_z)).astype('f')

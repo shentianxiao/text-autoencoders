@@ -70,19 +70,13 @@ parser.add_argument('--log-interval', type=int, default=100, metavar='N',
 def evaluate(model, batches):
     model.eval()
     meters = collections.defaultdict(lambda: AverageMeter())
-    total_nll, n_sents, n_words = 0, 0, 0
     with torch.no_grad():
         for inputs, targets in batches:
             losses = model.autoenc(inputs, targets)
             for k, v in losses.items():
                 meters[k].update(v.item(), inputs.size(1))
-            total_nll += model.nll_is(inputs, targets).sum().item()
-            n_sents += inputs.size(1)
-            n_words += (targets != model.vocab.pad).sum().item()
     loss = model.loss({k: meter.avg for k, meter in meters.items()})
     meters['loss'].update(loss)
-    meters['nll'].update(total_nll / n_sents)
-    meters['ppl'].update(np.exp(total_nll / n_words))
     return meters
 
 def main(args):
