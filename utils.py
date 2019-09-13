@@ -30,6 +30,13 @@ def write_doc(docs, path):
                 f.write(' '.join(s) + '\n')
             f.write('\n')
 
+def write_z(z, path):
+    with open(path, 'w') as f:
+        for zi in z:
+            for zij in zi:
+                f.write('%f ' % zij)
+            f.write('\n')
+
 def logging(s, path, print_=True):
     if print_:
         print(s)

@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 def word_shuffle(vocab, x, k):   # slight shuffle such that |sigma[i]-i| <= k

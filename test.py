@@ -127,7 +127,8 @@ if __name__ == '__main__':
         sents = load_sent(args.data)
         z = encode(sents)
         sents_rec = decode(z)
-        write_sent(sents_rec, os.path.join(args.checkpoint, args.output))
+        write_z(z, os.path.join(args.checkpoint, args.output+'.z'))
+        write_sent(sents_rec, os.path.join(args.checkpoint, args.output+'.rec'))
 
     if args.arithmetic:
         fa, fb, fc = args.data.split(',')
