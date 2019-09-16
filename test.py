@@ -2,6 +2,7 @@ import argparse
 import os
 import torch
 import numpy as np
+from sklearn.neighbors import NearestNeighbors
 
 from vocab import Vocab
 from model import *
@@ -40,7 +41,9 @@ parser.add_argument('--arithmetic', action='store_true',
                     help='compute vector offset avg(b)-avg(a) and apply to c')
 parser.add_argument('--interpolate', action='store_true',
                     help='interpolate between pairs of sentences')
-parser.add_argument('--m', type=int, default=50, metavar='N',
+parser.add_argument('--latent-nn', action='store_true',
+                    help='find nearest neighbor of sentences in the latent space')
+parser.add_argument('--m', type=int, default=100, metavar='N',
                     help='num of samples for importance sampling estimate')
 parser.add_argument('--n', type=int, default=5, metavar='N',
                     help='num of sentences to generate for sample/interpolate')
@@ -147,3 +150,15 @@ if __name__ == '__main__':
         si = decode(zi)
         si = list(zip(*[iter(si)]*(args.n)))
         write_doc(si, os.path.join(args.checkpoint, args.output))
+
+    if args.latent_nn:
+        sents = load_sent(args.data)
+        z = encode(sents)
+        with open(os.path.join(args.checkpoint, args.output), 'w') as f:
+            nn = NearestNeighbors(n_neighbors=args.n).fit(z)
+            dis, idx = nn.kneighbors(z[:args.m])
+            for i in range(len(idx)):
+                f.write(' '.join(sents[i]) + '\n')
+                for j, d in zip(idx[i], dis[i]):
+                    f.write(' '.join(sents[j]) + '\t%.2f\n' % d)
+                f.write('\n')
