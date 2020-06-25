@@ -1,9 +1,9 @@
 # text-autoencoders
 This repo contains the code and data of the following paper:  
-[Latent Space Secrets of Denoising Text-Autoencoders](https://arxiv.org/abs/1905.12777)  
+[Educating Text Autoencoders: Latent Representation Guidance via Denoising](https://arxiv.org/abs/1905.12777)  
 *Tianxiao Shen, Jonas Mueller, Regina Barzilay, and Tommi Jaakkola*
 
-We support plain autoencoder (AE), variational autoencoder (VAE), adversarial autoencoder (AAE), AAE with perturbed z, and AAE with perturbed x (ours, default).
+We support plain autoencoder (AE), variational autoencoder (VAE), adversarial autoencoder (AAE), Latent-noising AAE (LAAE), and Denoising AAE (DAAE).
 
 Once the model is trained, it can be used to generate sentences, map sentences to a continuous space, perform sentence analogy and interpolation.
 
@@ -19,14 +19,14 @@ bash download_data.sh
 ## Training
 The basic training command is:
 ```
-python train.py --train data/yelp/train.txt --valid data/yelp/valid.txt --save-dir checkpoints/yelp/daae
+python train.py --train data/yelp/train.txt --valid data/yelp/valid.txt --model aae --lambda_adv 10 --noise 0.3,0,0,0 --save-dir checkpoints/yelp/daae
 ```
 To train various models, use the following options:
-- AE: `--model ae --save-dir checkpoints/yelp/ae`
+- AE: `--model dae --save-dir checkpoints/yelp/ae`
 - VAE: `--model vae --lambda_kl 0.1 --save-dir checkpoints/yelp/vae_kl0.1`
-- AAE: `--model aae --noise 0,0,0,0 --save-dir checkpoints/yelp/aae`
-- AAE with perturbed z: `--model aae --noise 0,0,0,0 --lambda_p 0.01 --save-dir checkpoints/yelp/aae_p0.01`
-- AAE with perturbed x: `--model aae --save-dir checkpoints/yelp/daae`, and use `--noise P,P,P,K` to specify word drop probability, word blank probability, word substitute probability, max word shuffle distance, respectively
+- AAE: `--model aae --lambda_adv 10 --save-dir checkpoints/yelp/aae`
+- LAAE: `--model aae --lambda_adv 10 --lambda_p 0.01 --save-dir checkpoints/yelp/aae_p0.01`
+- DAAE: `--model aae --lambda_adv 10 --noise 0.3,0,0,0 --save-dir checkpoints/yelp/daae`, where `--noise P,P,P,K` specifies word drop probability, word blank probability, word substitute probability, max word shuffle distance, respectively
 
 Run `python train.py -h` to see all training options.
 
@@ -56,6 +56,3 @@ python test.py --interpolate --data data/yelp/interpolate/example.long,data/yelp
 ```
 
 The output file will be stored in the checkpoint directory.
-
-## TODO
-Current models are implemented using LSTM. We may switch to the Transformer architecture.
