@@ -7,6 +7,12 @@ We support plain autoencoder (AE), variational autoencoder (VAE), adversarial au
 
 Once the model is trained, it can be used to generate sentences, map sentences to a continuous space, perform sentence analogy and interpolation.
 
+<p align="center"><img width=800 src="img/example_vector_arithmetic.png"></p>
+<p align="center"><img width=800 src="img/example_interpolation.png"></p>
+
+## Video
+[![overview](https://img.youtube.com/vi/ioFQ8l-Fl7c/0.jpg)](https://www.youtube.com/watch?v=ioFQ8l-Fl7c)
+
 ## Dependencies
 The code has been tested in Python 3.7, PyTorch 1.1
 
