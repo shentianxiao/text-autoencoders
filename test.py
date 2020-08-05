@@ -54,7 +54,6 @@ parser.add_argument('--seed', type=int, default=1111, metavar='N',
                     help='random seed')
 parser.add_argument('--no-cuda', action='store_true',
                     help='disable CUDA')
-args = parser.parse_args()
 
 def get_model(path):
     ckpt = torch.load(path)
@@ -103,6 +102,7 @@ def calc_ppl(sents, m):
     return total_nll / len(sents), np.exp(total_nll / n_words)
 
 if __name__ == '__main__':
+    args = parser.parse_args()
     vocab = Vocab(os.path.join(args.checkpoint, 'vocab.txt'))
     set_seed(args.seed)
     cuda = not args.no_cuda and torch.cuda.is_available()
