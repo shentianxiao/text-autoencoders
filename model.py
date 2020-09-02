@@ -77,7 +77,7 @@ class DAE(TextModel):
             logits, hidden = self.decode(z, input, hidden)
             if alg == 'greedy':
                 input = logits.argmax(dim=-1)
-            else:
+            elif alg == 'sample':
                 input = torch.multinomial(logits.squeeze(dim=0).exp(), num_samples=1).t()
         return torch.cat(sents)
 
