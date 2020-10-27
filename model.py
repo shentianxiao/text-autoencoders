@@ -67,8 +67,8 @@ class DAE(TextModel):
         logits = self.proj(output.view(-1, output.size(-1)))
         return logits.view(output.size(0), output.size(1), -1), hidden
 
-    def generate(self, z, max_len, alg):
-        assert alg == 'greedy' or alg == 'sample'
+     def generate(self, z, max_len, alg):
+        assert alg in ['greedy' , 'sample' , 'top5']
         sents = []
         input = torch.zeros(1, len(z), dtype=torch.long, device=z.device).fill_(self.vocab.go)
         hidden = None
@@ -77,8 +77,13 @@ class DAE(TextModel):
             logits, hidden = self.decode(z, input, hidden)
             if alg == 'greedy':
                 input = logits.argmax(dim=-1)
-            else:
+            elif alg == 'sample':
                 input = torch.multinomial(logits.squeeze(dim=0).exp(), num_samples=1).t()
+            elif alg == 'top5':
+                not_top5_indices=logits.topk(logits.shape[-1]-5,dim=2,largest=False).indices
+                logits_exp=logits.exp()
+                logits_exp[:,:,not_top5_indices]=0.
+                input = torch.multinomial(logits_exp.squeeze(dim=0), num_samples=1).t()
         return torch.cat(sents)
 
     def forward(self, input, is_train=False):
