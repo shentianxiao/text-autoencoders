@@ -36,7 +36,7 @@ parser.add_argument('--nlayers', type=int, default=1, metavar='N',
 parser.add_argument('--dim_d', type=int, default=512, metavar='D',
                     help='dimension of hidden state in AAE discriminator')
 # Model arguments
-parser.add_argument('--model', default='dae', metavar='M',
+parser.add_argument('--model_type', default='dae', metavar='M',
                     choices=['dae', 'vae', 'aae'],
                     help='which model to learn')
 parser.add_argument('--lambda_kl', type=float, default=0, metavar='R',
@@ -101,7 +101,7 @@ def main(args):
     set_seed(args.seed)
     cuda = not args.no_cuda and torch.cuda.is_available()
     device = torch.device('cuda' if cuda else 'cpu')
-    model = {'dae': DAE, 'vae': VAE, 'aae': AAE}[args.model](
+    model = {'dae': DAE, 'vae': VAE, 'aae': AAE}[args.model_type](
         vocab, args).to(device)
     if args.load_model:
         ckpt = torch.load(args.load_model)
