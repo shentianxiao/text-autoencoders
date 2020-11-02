@@ -25,14 +25,14 @@ bash download_data.sh
 ## Training
 The basic training command is:
 ```
-python train.py --train data/yelp/train.txt --valid data/yelp/valid.txt --model aae --lambda_adv 10 --noise 0.3,0,0,0 --save-dir checkpoints/yelp/daae
+python train.py --train data/yelp/train.txt --valid data/yelp/valid.txt --model_type aae --lambda_adv 10 --noise 0.3,0,0,0 --save-dir checkpoints/yelp/daae
 ```
 To train various models, use the following options:
-- AE: `--model dae --save-dir checkpoints/yelp/ae`
-- VAE: `--model vae --lambda_kl 0.1 --save-dir checkpoints/yelp/vae_kl0.1`
-- AAE: `--model aae --lambda_adv 10 --save-dir checkpoints/yelp/aae`
-- LAAE: `--model aae --lambda_adv 10 --lambda_p 0.01 --save-dir checkpoints/yelp/aae_p0.01`
-- DAAE: `--model aae --lambda_adv 10 --noise 0.3,0,0,0 --save-dir checkpoints/yelp/daae`, where `--noise P,P,P,K` specifies word drop probability, word blank probability, word substitute probability, max word shuffle distance, respectively
+- AE: `--model_type dae --save-dir checkpoints/yelp/ae`
+- VAE: `--model_type vae --lambda_kl 0.1 --save-dir checkpoints/yelp/vae_kl0.1`
+- AAE: `--model_type aae --lambda_adv 10 --save-dir checkpoints/yelp/aae`
+- LAAE: `--model_type aae --lambda_adv 10 --lambda_p 0.01 --save-dir checkpoints/yelp/aae_p0.01`
+- DAAE: `--model_type aae --lambda_adv 10 --noise 0.3,0,0,0 --save-dir checkpoints/yelp/daae`, where `--noise P,P,P,K` specifies word drop probability, word blank probability, word substitute probability, max word shuffle distance, respectively
 
 Run `python train.py -h` to see all training options.
 
