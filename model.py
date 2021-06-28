@@ -67,7 +67,7 @@ class DAE(TextModel):
         logits = self.proj(output.view(-1, output.size(-1)))
         return logits.view(output.size(0), output.size(1), -1), hidden
 
-     def generate(self, z, max_len, alg):
+    def generate(self, z, max_len, alg):
         assert alg in ['greedy' , 'sample' , 'top5']
         sents = []
         input = torch.zeros(1, len(z), dtype=torch.long, device=z.device).fill_(self.vocab.go)
