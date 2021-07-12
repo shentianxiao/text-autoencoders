@@ -41,7 +41,7 @@ After training, the model can be used for different tasks.
 
 To reconstruct input data, run:
 ```
-python test.py --reconstruct --data data/yelp/test.txt --output test.rec --checkpoint checkpoints/yelp/daae/
+python test.py --reconstruct --data data/yelp/test.txt --output test --checkpoint checkpoints/yelp/daae/
 ```
 
 To generate sentences from the model, run:
