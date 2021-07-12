@@ -31,7 +31,7 @@ def word_substitute(vocab, x, p):     # substitute words with probability p
     keep = (torch.rand(x.size(), device=x.device) > p) | \
         (x == vocab.go) | (x == vocab.pad)
     x_ = x.clone()
-    x_.random_(0, vocab.size)
+    x_.random_(vocab.nspecial, vocab.size)
     x_[keep] = x[keep]
     return x_
 

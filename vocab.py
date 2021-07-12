@@ -17,6 +17,7 @@ class Vocab(object):
         self.eos = self.word2idx['<eos>']
         self.unk = self.word2idx['<unk>']
         self.blank = self.word2idx['<blank>']
+        self.nspecial = 5
 
     @staticmethod
     def build(sents, path, size):
