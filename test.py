@@ -56,7 +56,7 @@ parser.add_argument('--no-cuda', action='store_true',
                     help='disable CUDA')
 
 def get_model(path):
-    ckpt = torch.load(path)
+    ckpt = torch.load(path, map_location=torch.device(device))
     train_args = ckpt['args']
     model = {'dae': DAE, 'vae': VAE, 'aae': AAE}[train_args.model_type](
         vocab, train_args).to(device)
